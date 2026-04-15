@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Gtext Holdings celebrates 18 years of excellence. Join us May 15th, 2026." />
-  <title>Gtext Holdings — 18 Years of Excellence</title>
+  <meta name="description" content="Gtext Homes celebrates 18 years of excellence. Join us May 15th, 2026." />
+  <title>Gtext Homes — 18 Years of Excellence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
@@ -15,9 +15,9 @@
 
   <header class="site-header" id="top">
     <div class="header-inner">
-      <a class="brand" href="#top" aria-label="Gtext Holdings home">
+      <a class="brand" href="#top" aria-label="Gtext Homes home">
         <span class="brand-mark">Gtext</span>
-        <span class="brand-sub">Holdings</span>
+        <span class="brand-sub">Homes</span>
       </a>
       <nav class="nav" aria-label="Primary">
         <a href="#about">About</a>
@@ -43,7 +43,7 @@
       <div class="hero-grid">
         <div class="hero-copy">
           <p class="eyebrow">May 15, 2026 · Anniversary Celebration</p>
-          <h1 id="hero-title" class="hero-title">Gtext Holdings Celebrates 18 Years of Excellence</h1>
+          <h1 id="hero-title" class="hero-title">Gtext Homes Celebrates 18 Years of Excellence</h1>
           <p class="hero-lead">
             Join us on May 15th as we celebrate 18 years of building wealth, creating opportunities, and transforming lives across the globe.
           </p>
@@ -67,7 +67,7 @@
         <h2 class="section-title">A Legacy of Vision, Growth, and Results</h2>
         <div class="prose">
           <p>
-            For 18 years, Gtext Holdings has remained committed to one mission — helping individuals and organizations build sustainable wealth through strategic investments and global opportunities.
+            For 18 years, Gtext Homes has remained committed to one mission — helping individuals and organizations build sustainable wealth through strategic investments and global opportunities.
           </p>
           <p>
             From humble beginnings to becoming a recognized name in real estate and investment, our journey has been defined by innovation, integrity, and consistent results.
@@ -85,7 +85,7 @@
           <p class="section-eyebrow light">Milestones</p>
           <h2 class="section-title light">18 Years of Proven Impact</h2>
           <p class="impact-intro light-muted">
-            Over the years, we have built more than just a company — we have built trust, results, and lasting relationships.
+            Over the years, we have built more than just a company we have built trust, results, and lasting relationships.
           </p>
         </div>
         <ul class="impact-list">
@@ -95,7 +95,7 @@
           <li>Trusted by investors and entrepreneurs</li>
           <li>A track record of consistent growth and innovation</li>
         </ul>
-        <p class="impact-close">Our results speak for themselves — and the journey is still unfolding.</p>
+        <p class="impact-close">Our results speak for themselves and the journey is still unfolding.</p>
       </div>
     </section>
 
@@ -150,6 +150,7 @@
             Complete the form below to confirm your attendance and help us better understand your interests.
           </p>
         </div>
+        <div class="register-form-col">
         <form class="rsvp-form" id="rsvp-form" novalidate>
           <div class="field">
             <label for="full-name">Full Name</label>
@@ -165,14 +166,31 @@
           </div>
 
           <fieldset class="fieldset">
-            <legend>Are you currently a Gtext Holdings client?</legend>
+            <legend>Mode of attendance</legend>
+            <div class="radio-row">
+              <label class="radio">
+                <input type="radio" name="attendance_mode" value="physical" required />
+                <span>Physical</span>
+              </label>
+              <label class="radio">
+                <input type="radio" name="attendance_mode" value="virtual" />
+                <span>Virtual</span>
+              </label>
+            </div>
+            <p class="attendance-hint" id="attendance-virtual-hint" hidden>
+              Choosing virtual: we will send you a link (email or WhatsApp) to complete your details and access the session online.
+            </p>
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend>Are you currently a Gtext Homes client?</legend>
             <div class="radio-row">
               <label class="radio">
                 <input type="radio" name="is_client" value="yes" required />
                 <span>Yes, I am an existing client</span>
               </label>
               <label class="radio">
-                <input type="radio" name="is_client" value="no" required />
+                <input type="radio" name="is_client" value="no" />
                 <span>No, I am a new prospect</span>
               </label>
             </div>
@@ -231,6 +249,21 @@
           <button type="submit" class="btn btn-primary btn-full">Confirm My Attendance</button>
           <p class="form-note" id="form-status" role="status" aria-live="polite"></p>
         </form>
+
+        <div class="rsvp-success" id="rsvp-success" hidden role="region" aria-labelledby="rsvp-success-title" aria-live="polite">
+          <div class="rsvp-success-card">
+            <div class="rsvp-success-accent" aria-hidden="true"></div>
+            <p class="rsvp-success-eyebrow">Confirmation</p>
+            <h3 class="rsvp-success-title" id="rsvp-success-title" tabindex="-1">Your RSVP is confirmed</h3>
+            <p class="rsvp-success-lead" id="rsvp-success-lead"></p>
+            <p class="rsvp-success-note">We look forward to celebrating with you on <strong>May 15th, 2026</strong>.</p>
+            <div class="rsvp-success-actions">
+              <button type="button" class="btn btn-primary" id="rsvp-success-another">Submit another RSVP</button>
+              <a href="#event" class="rsvp-success-link">View event details</a>
+            </div>
+          </div>
+        </div>
+        </div>
       </div>
     </section>
 
@@ -246,7 +279,7 @@
             Our commitment remains the same to create opportunities that empower people and build lasting wealth.
           </p>
           <p>
-            The next chapter of Gtext Holdings will be bigger, stronger, and more global than ever before.
+            The next chapter of Gtext Homes will be bigger, stronger, and more global than ever before.
           </p>
         </div>
         <p class="vision-close">We invite you to be part of what comes next.</p>
@@ -267,10 +300,10 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <span class="footer-name">Gtext Holdings</span>
+        <span class="footer-name">Gtext Homes</span>
         <p class="footer-tagline">Building Wealth · Creating Opportunities · Transforming Lives</p>
       </div>
-      <p class="footer-copy">&copy; <span id="year"></span> Gtext Holdings. All rights reserved.</p>
+      <p class="footer-copy">&copy; <span id="year"></span> Gtext Homes. All rights reserved.</p>
     </div>
   </footer>
 

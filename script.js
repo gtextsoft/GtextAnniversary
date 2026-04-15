@@ -30,23 +30,50 @@
   var blockClient = document.getElementById("block-client");
   var blockProspect = document.getElementById("block-prospect");
 
+  var FORMSPREE_ENDPOINT = "https://formspree.io/f/xgoroyak";
+
+  function formspreeErrorMessage(data) {
+    if (!data) return "Submit failed.";
+    if (typeof data.error === "string" && data.error) return data.error;
+    if (data.errors && typeof data.errors === "object") {
+      var parts = [];
+      Object.keys(data.errors).forEach(function (k) {
+        var v = data.errors[k];
+        if (typeof v === "string") parts.push(v);
+        else if (v && v.message) parts.push(v.message);
+      });
+      if (parts.length) return parts.join(" ");
+    }
+    return "Something went wrong. Please try again or contact us directly.";
+  }
+
+  function setContainerInputsDisabled(container, disabled) {
+    if (!container) return;
+    container.querySelectorAll("input, select, textarea").forEach(function (el) {
+      el.disabled = !!disabled;
+    });
+  }
+
   function syncClientBlocks() {
     var selected = document.querySelector('input[name="is_client"]:checked');
     var val = selected ? selected.value : null;
     if (val === "yes") {
       blockClient.removeAttribute("hidden");
       blockProspect.setAttribute("hidden", "");
-      document.getElementById("prev-product").setAttribute("required", "");
+      setContainerInputsDisabled(blockClient, false);
+      setContainerInputsDisabled(blockProspect, true);
       clearProspectRadios();
     } else if (val === "no") {
       blockProspect.removeAttribute("hidden");
       blockClient.setAttribute("hidden", "");
-      document.getElementById("prev-product").removeAttribute("required");
+      setContainerInputsDisabled(blockProspect, false);
+      setContainerInputsDisabled(blockClient, true);
       clearExistingInvestmentRadios();
     } else {
       blockClient.setAttribute("hidden", "");
       blockProspect.setAttribute("hidden", "");
-      document.getElementById("prev-product").removeAttribute("required");
+      setContainerInputsDisabled(blockClient, true);
+      setContainerInputsDisabled(blockProspect, true);
     }
   }
 
@@ -80,13 +107,63 @@
     });
   }
 
+  var attendanceRadios = document.querySelectorAll('input[name="attendance_mode"]');
+  var attendanceVirtualHint = document.getElementById("attendance-virtual-hint");
+  function syncAttendanceHint() {
+    var sel = document.querySelector('input[name="attendance_mode"]:checked');
+    if (attendanceVirtualHint) {
+      if (sel && sel.value === "virtual") {
+        attendanceVirtualHint.removeAttribute("hidden");
+      } else {
+        attendanceVirtualHint.setAttribute("hidden", "");
+      }
+    }
+  }
+  attendanceRadios.forEach(function (r) {
+    r.addEventListener("change", syncAttendanceHint);
+  });
+
   var form = document.getElementById("rsvp-form");
   var status = document.getElementById("form-status");
+  var successPanel = document.getElementById("rsvp-success");
+  var successLead = document.getElementById("rsvp-success-lead");
+  var successTitle = document.getElementById("rsvp-success-title");
+  var successAnother = document.getElementById("rsvp-success-another");
+
+  var leadPhysical =
+    "Thank you. Your in-person seat request is recorded — our team will follow up to confirm your attendance and share venue details.";
+  var leadVirtual =
+    "Thank you for choosing virtual attendance. We will send you a link by email or WhatsApp to complete your online registration and access the session.";
+
+  if (successAnother && form && successPanel) {
+    successAnother.addEventListener("click", function () {
+      successPanel.setAttribute("hidden", "");
+      form.removeAttribute("hidden");
+      form.reset();
+      syncClientBlocks();
+      syncAttendanceHint();
+      if (status) {
+        status.textContent = "";
+        status.removeAttribute("data-error");
+      }
+      var first = document.getElementById("full-name");
+      if (first) first.focus();
+    });
+  }
 
   if (form) {
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      if (status) status.textContent = "";
+      if (status) {
+        status.textContent = "";
+        status.removeAttribute("data-error");
+      }
+
+      var mode = document.querySelector('input[name="attendance_mode"]:checked');
+      if (!mode) {
+        if (status) status.textContent = "Please choose your mode of attendance — physical or virtual.";
+        return;
+      }
 
       var isClient = document.querySelector('input[name="is_client"]:checked');
       if (!isClient) {
@@ -124,14 +201,68 @@
         }
       }
 
-      if (status) {
-        status.textContent =
-          "Thank you — your attendance request has been recorded. Our team will confirm shortly.";
-      }
-      form.reset();
       syncClientBlocks();
+
+      var submitBtn = form.querySelector('[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+
+      var fd = new FormData(form);
+      fd.append("_subject", "Gtext Homes — 18th Anniversary RSVP");
+
+      fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        body: fd,
+        headers: { Accept: "application/json" },
+      })
+        .then(function (response) {
+          return response
+            .json()
+            .catch(function () {
+              return {};
+            })
+            .then(function (data) {
+              return { ok: response.ok, status: response.status, data: data };
+            });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            throw new Error(formspreeErrorMessage(result.data));
+          }
+          if (status) {
+            status.textContent = "";
+            status.removeAttribute("data-error");
+          }
+          form.reset();
+          syncClientBlocks();
+          syncAttendanceHint();
+          if (successLead) {
+            successLead.textContent = mode.value === "virtual" ? leadVirtual : leadPhysical;
+          }
+          form.setAttribute("hidden", "");
+          if (successPanel) successPanel.removeAttribute("hidden");
+          if (successTitle && typeof successTitle.focus === "function") {
+            successTitle.focus({ preventScroll: true });
+          }
+          if (successPanel) {
+            var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            successPanel.scrollIntoView({
+              behavior: reduceMotion ? "auto" : "smooth",
+              block: "nearest",
+            });
+          }
+        })
+        .catch(function (err) {
+          if (status) {
+            status.textContent = err.message || "Could not send your RSVP. Please try again.";
+            status.setAttribute("data-error", "");
+          }
+        })
+        .finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
     });
   }
 
   syncClientBlocks();
+  syncAttendanceHint();
 })();
