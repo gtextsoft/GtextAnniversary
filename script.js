@@ -26,9 +26,106 @@
     });
   }
 
-  var clientRadios = document.querySelectorAll('input[name="is_client"]');
-  var blockClient = document.getElementById("block-client");
-  var blockProspect = document.getElementById("block-prospect");
+  /** Weekly ₦1.5M steps: countdown targets start time, then +7 days until end. Adjust if increments move on a different schedule. */
+  var CAMPAIGN_PRICE = {
+    start: new Date("2026-05-02T09:00:00+01:00").getTime(),
+    end: new Date("2026-06-05T23:59:59+01:00").getTime(),
+    weekMs: 7 * 24 * 60 * 60 * 1000,
+  };
+
+  function nextPriceIncrementMs(nowMs) {
+    var now = nowMs;
+    if (now < CAMPAIGN_PRICE.start) return CAMPAIGN_PRICE.start;
+    if (now > CAMPAIGN_PRICE.end) return null;
+    var elapsed = now - CAMPAIGN_PRICE.start;
+    var k = Math.floor(elapsed / CAMPAIGN_PRICE.weekMs) + 1;
+    var next = CAMPAIGN_PRICE.start + k * CAMPAIGN_PRICE.weekMs;
+    if (next > CAMPAIGN_PRICE.end) return null;
+    return next;
+  }
+
+  function pad2(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function formatCountdownParts(targetMs) {
+    var now = Date.now();
+    var diff = targetMs - now;
+    if (diff <= 0) {
+      return { expired: true, days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+    var sec = Math.floor(diff / 1000);
+    var days = Math.floor(sec / 86400);
+    sec -= days * 86400;
+    var hours = Math.floor(sec / 3600);
+    sec -= hours * 3600;
+    var minutes = Math.floor(sec / 60);
+    var seconds = sec - minutes * 60;
+    return { expired: false, days: days, hours: hours, minutes: minutes, seconds: seconds };
+  }
+
+  function renderCountdownInto(el, targetMs, emptyLabel) {
+    if (!el) return;
+    if (targetMs == null) {
+      el.textContent = emptyLabel || "Campaign window closed";
+      return;
+    }
+    var p = formatCountdownParts(targetMs);
+    if (p.expired) {
+      el.textContent = "Now";
+      return;
+    }
+    el.innerHTML =
+      '<span class="cd"><strong>' +
+      p.days +
+      '</strong><small>d</small></span><span class="cd"><strong>' +
+      pad2(p.hours) +
+      '</strong><small>h</small></span><span class="cd"><strong>' +
+      pad2(p.minutes) +
+      '</strong><small>m</small></span><span class="cd"><strong>' +
+      pad2(p.seconds) +
+      '</strong><small>s</small></span>';
+  }
+
+  function updateUrgencyLine() {
+    var line = document.getElementById("urgency-next-line");
+    if (!line) return;
+    var next = nextPriceIncrementMs(Date.now());
+    if (next == null) {
+      if (Date.now() > CAMPAIGN_PRICE.end) {
+        line.textContent = "Campaign pricing window ended — speak to an advisor for current inventory.";
+      } else {
+        line.textContent = "Final pricing phase — confirm your rate before close of campaign.";
+      }
+      return;
+    }
+    var d = new Date(next);
+    var opts = { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" };
+    try {
+      line.textContent = "Next +₦1.5M boundary: " + d.toLocaleString("en-NG", opts);
+    } catch (e) {
+      line.textContent = "Next +₦1.5M boundary approaches — lock your price now.";
+    }
+  }
+
+  function tickCountdowns() {
+    var finaleEl = document.getElementById("countdown-finale");
+    var targetFinale = finaleEl ? finaleEl.getAttribute("data-countdown-target") : null;
+    var finaleMs = targetFinale ? Date.parse(targetFinale) : NaN;
+    if (finaleEl && !isNaN(finaleMs)) {
+      renderCountdownInto(finaleEl, finaleMs, "Event started");
+    }
+
+    var nextPrice = nextPriceIncrementMs(Date.now());
+    document.querySelectorAll("[data-price-campaign]").forEach(function (node) {
+      renderCountdownInto(node, nextPrice, "—");
+    });
+
+    updateUrgencyLine();
+  }
+
+  tickCountdowns();
+  setInterval(tickCountdowns, 1000);
 
   var FORMSPREE_ENDPOINT = "https://formspree.io/f/xgoroyak";
 
@@ -47,82 +144,6 @@
     return "Something went wrong. Please try again or contact us directly.";
   }
 
-  function setContainerInputsDisabled(container, disabled) {
-    if (!container) return;
-    container.querySelectorAll("input, select, textarea").forEach(function (el) {
-      el.disabled = !!disabled;
-    });
-  }
-
-  function syncClientBlocks() {
-    var selected = document.querySelector('input[name="is_client"]:checked');
-    var val = selected ? selected.value : null;
-    if (val === "yes") {
-      blockClient.removeAttribute("hidden");
-      blockProspect.setAttribute("hidden", "");
-      setContainerInputsDisabled(blockClient, false);
-      setContainerInputsDisabled(blockProspect, true);
-      clearProspectRadios();
-    } else if (val === "no") {
-      blockProspect.removeAttribute("hidden");
-      blockClient.setAttribute("hidden", "");
-      setContainerInputsDisabled(blockProspect, false);
-      setContainerInputsDisabled(blockClient, true);
-      clearExistingInvestmentRadios();
-    } else {
-      blockClient.setAttribute("hidden", "");
-      blockProspect.setAttribute("hidden", "");
-      setContainerInputsDisabled(blockClient, true);
-      setContainerInputsDisabled(blockProspect, true);
-    }
-  }
-
-  function clearProspectRadios() {
-    ["opportunity", "budget", "timeline"].forEach(function (name) {
-      document.querySelectorAll('input[name="' + name + '"]').forEach(function (r) {
-        r.checked = false;
-      });
-    });
-    var otherText = document.getElementById("opp-other-text");
-    if (otherText) otherText.value = "";
-  }
-
-  function clearExistingInvestmentRadios() {
-    document.querySelectorAll('input[name="investment_existing"]').forEach(function (r) {
-      r.checked = false;
-    });
-    var prev = document.getElementById("prev-product");
-    if (prev) prev.value = "";
-  }
-
-  clientRadios.forEach(function (radio) {
-    radio.addEventListener("change", syncClientBlocks);
-  });
-
-  var oppOtherRadio = document.getElementById("opp-other-radio");
-  var oppOtherText = document.getElementById("opp-other-text");
-  if (oppOtherRadio && oppOtherText) {
-    oppOtherText.addEventListener("focus", function () {
-      oppOtherRadio.checked = true;
-    });
-  }
-
-  var attendanceRadios = document.querySelectorAll('input[name="attendance_mode"]');
-  var attendanceVirtualHint = document.getElementById("attendance-virtual-hint");
-  function syncAttendanceHint() {
-    var sel = document.querySelector('input[name="attendance_mode"]:checked');
-    if (attendanceVirtualHint) {
-      if (sel && sel.value === "virtual") {
-        attendanceVirtualHint.removeAttribute("hidden");
-      } else {
-        attendanceVirtualHint.setAttribute("hidden", "");
-      }
-    }
-  }
-  attendanceRadios.forEach(function (r) {
-    r.addEventListener("change", syncAttendanceHint);
-  });
-
   var form = document.getElementById("rsvp-form");
   var status = document.getElementById("form-status");
   var successPanel = document.getElementById("rsvp-success");
@@ -130,18 +151,14 @@
   var successTitle = document.getElementById("rsvp-success-title");
   var successAnother = document.getElementById("rsvp-success-another");
 
-  var leadPhysical =
-    "Thank you. Your in-person seat request is recorded — our team will follow up to confirm your attendance and share venue details.";
-  var leadVirtual =
-    "Thank you for choosing virtual attendance. We will send you a link by email or WhatsApp to complete your online registration and access the session.";
+  var leadOk =
+    "Thank you — your registration is submitted. Expect a call or WhatsApp message from our team with the right next step for your interest.";
 
   if (successAnother && form && successPanel) {
     successAnother.addEventListener("click", function () {
       successPanel.setAttribute("hidden", "");
       form.removeAttribute("hidden");
       form.reset();
-      syncClientBlocks();
-      syncAttendanceHint();
       if (status) {
         status.textContent = "";
         status.removeAttribute("data-error");
@@ -159,55 +176,42 @@
         status.removeAttribute("data-error");
       }
 
-      var mode = document.querySelector('input[name="attendance_mode"]:checked');
-      if (!mode) {
-        if (status) status.textContent = "Please choose your mode of attendance — physical or virtual.";
+      var honeypot = form.querySelector('input[name="_gotcha"]');
+      if (honeypot && honeypot.value) {
         return;
       }
 
-      var isClient = document.querySelector('input[name="is_client"]:checked');
-      if (!isClient) {
-        if (status) status.textContent = "Please indicate whether you are an existing client.";
+      var nameEl = document.getElementById("full-name");
+      var phoneEl = document.getElementById("phone");
+      var emailEl = document.getElementById("email");
+      if (!nameEl || !nameEl.value.trim()) {
+        if (status) status.textContent = "Please enter your full name.";
         return;
       }
-
-      if (isClient.value === "yes") {
-        var inv = document.querySelector('input[name="investment_existing"]:checked');
-        if (!inv) {
-          if (status) status.textContent = "Please select your approximate investment value.";
-          return;
-        }
+      if (!phoneEl || !phoneEl.value.trim()) {
+        if (status) status.textContent = "Please enter your phone number.";
+        return;
       }
-
-      if (isClient.value === "no") {
-        var opp = document.querySelector('input[name="opportunity"]:checked');
-        if (!opp) {
-          if (status) status.textContent = "Please select an opportunity you are interested in.";
-          return;
-        }
-        if (opp.value === "other" && !oppOtherText.value.trim()) {
-          if (status) status.textContent = "Please specify your other area of interest.";
-          return;
-        }
-        var bud = document.querySelector('input[name="budget"]:checked');
-        if (!bud) {
-          if (status) status.textContent = "Please select your estimated budget.";
-          return;
-        }
-        var time = document.querySelector('input[name="timeline"]:checked');
-        if (!time) {
-          if (status) status.textContent = "Please select how soon you are looking to invest.";
-          return;
-        }
+      if (!emailEl || !emailEl.value.trim()) {
+        if (status) status.textContent = "Please enter your email.";
+        return;
       }
-
-      syncClientBlocks();
+      var userType = document.querySelector('input[name="user_type"]:checked');
+      if (!userType) {
+        if (status) status.textContent = "Please select whether you are a realtor, investor, or buyer.";
+        return;
+      }
+      var focus = document.querySelector('input[name="interest_focus"]:checked');
+      if (!focus) {
+        if (status) status.textContent = "Please select your primary interest (event, property, or partnership).";
+        return;
+      }
 
       var submitBtn = form.querySelector('[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
 
       var fd = new FormData(form);
-      fd.append("_subject", "Gtext Homes — 18th Anniversary RSVP");
+      fd.append("_subject", "Gtext 18th Anniversary — Registration Hub");
 
       fetch(FORMSPREE_ENDPOINT, {
         method: "POST",
@@ -233,10 +237,8 @@
             status.removeAttribute("data-error");
           }
           form.reset();
-          syncClientBlocks();
-          syncAttendanceHint();
           if (successLead) {
-            successLead.textContent = mode.value === "virtual" ? leadVirtual : leadPhysical;
+            successLead.textContent = leadOk;
           }
           form.setAttribute("hidden", "");
           if (successPanel) successPanel.removeAttribute("hidden");
@@ -253,7 +255,7 @@
         })
         .catch(function (err) {
           if (status) {
-            status.textContent = err.message || "Could not send your RSVP. Please try again.";
+            status.textContent = err.message || "Could not send. Please try again.";
             status.setAttribute("data-error", "");
           }
         })
@@ -262,7 +264,4 @@
         });
     });
   }
-
-  syncClientBlocks();
-  syncAttendanceHint();
 })();
