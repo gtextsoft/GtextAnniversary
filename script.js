@@ -205,6 +205,27 @@
     return "Something went wrong. Please try again or contact us directly.";
   }
 
+  function normalizedValue(v) {
+    return String(v || "").replace(/\s+/g, " ").trim();
+  }
+
+  function hasUnsafeInput(v) {
+    if (!v) return false;
+    return /<[^>]*>|javascript:|data:text\/html|on\w+\s*=|script|iframe|object|embed/i.test(v);
+  }
+
+  function isValidEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  }
+
+  function isValidPhone(v) {
+    return /^\+?[0-9 ()-]{10,20}$/.test(v);
+  }
+
+  function isValidName(v) {
+    return /^[A-Za-zÀ-ÿ'., -]{2,80}$/.test(v);
+  }
+
   var form = document.getElementById("rsvp-form");
   var status = document.getElementById("form-status");
   var successPanel = document.getElementById("rsvp-success");
@@ -245,16 +266,42 @@
       var nameEl = document.getElementById("full-name");
       var phoneEl = document.getElementById("phone");
       var emailEl = document.getElementById("email");
-      if (!nameEl || !nameEl.value.trim()) {
+      var cleanName = normalizedValue(nameEl && nameEl.value);
+      var cleanPhone = normalizedValue(phoneEl && phoneEl.value);
+      var cleanEmail = normalizedValue(emailEl && emailEl.value).toLowerCase();
+      var notesEl = document.getElementById("notes");
+      var cleanNotes = normalizedValue(notesEl && notesEl.value);
+
+      if (!nameEl || !cleanName) {
         if (status) status.textContent = "Please enter your full name.";
         return;
       }
-      if (!phoneEl || !phoneEl.value.trim()) {
+      if (!isValidName(cleanName)) {
+        if (status) status.textContent = "Enter a valid full name (letters and common punctuation only).";
+        return;
+      }
+      if (!phoneEl || !cleanPhone) {
         if (status) status.textContent = "Please enter your phone number.";
         return;
       }
-      if (!emailEl || !emailEl.value.trim()) {
+      if (!isValidPhone(cleanPhone)) {
+        if (status) status.textContent = "Enter a valid phone number (10-20 digits, may include +, spaces, brackets, or dashes).";
+        return;
+      }
+      if (!emailEl || !cleanEmail) {
         if (status) status.textContent = "Please enter your email.";
+        return;
+      }
+      if (!isValidEmail(cleanEmail)) {
+        if (status) status.textContent = "Please enter a valid email address.";
+        return;
+      }
+      if (cleanNotes.length > 500) {
+        if (status) status.textContent = "Notes must be 500 characters or fewer.";
+        return;
+      }
+      if (hasUnsafeInput(cleanName) || hasUnsafeInput(cleanPhone) || hasUnsafeInput(cleanEmail) || hasUnsafeInput(cleanNotes)) {
+        if (status) status.textContent = "Your input contains blocked content. Please remove HTML/scripts and try again.";
         return;
       }
       var userType = document.querySelector('input[name="user_type"]:checked');
@@ -270,6 +317,11 @@
 
       var submitBtn = form.querySelector('[type="submit"]');
       if (submitBtn) submitBtn.disabled = true;
+
+      nameEl.value = cleanName;
+      phoneEl.value = cleanPhone;
+      emailEl.value = cleanEmail;
+      if (notesEl) notesEl.value = cleanNotes;
 
       var fd = new FormData(form);
       fd.append("_subject", "Gtext 18th Anniversary — Registration Hub");

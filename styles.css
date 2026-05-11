@@ -1483,8 +1483,8 @@ img {
   list-style: none;
   margin: var(--space-lg) 0 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -1497,6 +1497,13 @@ img {
   border: 1px solid var(--line);
   background: var(--bg-page);
   color: var(--ink-muted);
+  text-align: center;
+}
+
+@media (max-width: 899px) {
+  .milestone-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .section-events {
